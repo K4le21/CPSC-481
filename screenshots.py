@@ -3,6 +3,8 @@ import time
 import os
 import re
 
+#This program is used to take screenshots and saves the under /trainingimgs/
+
 # time interval between screenshots (in seconds)
 interval = 0.1
 
