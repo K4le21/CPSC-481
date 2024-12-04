@@ -21,25 +21,26 @@ class Platform():
         self.blueDirection = 0
 
     def getKind(self, score):
+        # Note kind = 0 is green, 1 is blue, 2 is red
         chance = random.randint(0,100)
         if (score < 1500):
-            if (chance < 85):                 # 80% chance to get green platform
+            if (chance < 85):                 # 85% chance to get green platform
                 self.kind = 0            
-            elif (chance < 95):               # 10% chance to get red or blue 
+            elif (chance < 95):               # 10% chance to get blue 
                 self.kind = 1                   
-            else:
+            else:                             # 5% chance to get red
                 self.kind = 2  
         elif (score < 2500):
-            if (chance < 75):                 # 70% chance to get green platform
+            if (chance < 75):                 # 75% chance to get green platform
                 self.kind = 0            
             elif (chance < 95):               # 20% chance to get blue 
                 self.kind = 1                   
-            else:
+            else:                             # 5% chance to get red
                 self.kind = 2 
         else:
-            if (chance < 55):                 # 50% chance to get green platform
+            if (chance < 50):                 # 50% chance to get green platform
                 self.kind = 0            
-            elif (chance < 95):               # 40% chance to get blue 
+            elif (chance < 90):               # 40% chance to get blue 
                 self.kind = 1                   
             else:
                 self.kind = 2                   # 10% chance to get red
@@ -66,8 +67,3 @@ class Platform():
             
             if (self.x <= 0):
                 self.blueDirection = 1
-
-        
-
-
-            
