@@ -5,6 +5,7 @@ import neuralnet as nn
 import Player
 import ga
 import time
+import csv
 
 
 W = 600
@@ -13,7 +14,7 @@ TOTAL = 20
 
 
 class DoodleJump():
-    def __init__(self):
+    def __init__(self, mode):
         self.screen = pygame.display.set_mode((W, H))
         pygame.font.init()
         self.score = 0
@@ -24,6 +25,8 @@ class DoodleJump():
         self.generation = 1
         self.time = time.time()
         self.startY = -100
+        self.best_doodles = []
+        self.time_trial = mode
 
 
         
@@ -171,32 +174,40 @@ class DoodleJump():
                 doodler.clear()
 
             # When all doodlers are dead, create new generation
-            if(len(doodler) == 0 ):   
+            if(len(doodler) == 0 or (currentTime-starttime > 30 and mode != 0)):
                 self.camera = 0
                 self.time = time.time()
-                self.score = 0
+                
                 doodler.clear()
                 self.platforms.clear()
                 self.generateplatforms(True)
                  # Stagnation (No improvement)
-                if ((self.generation > 100 and highestScore < 4000)):
-                    print("RESET")
-                    self.generation = 0
-                    doodler = GA.populate(TOTAL, None)
-                    starttime = time.time()
+                self.best_doodles.append([self.generation, currentTime-starttime ,self.score])
 
-                    
+                # Stop after 50 generations
+                if (self.generation > 10 ):
+                    print("Complete")
+                    # write results to csv
+                    file_path = 'v2_results.csv'
+                    with open(file_path, mode="w", newline="") as file:
+                        fieldnames=["Generation", "Time Alive", "Score"]
+                        writer = csv.writer(file)
+                        writer.writerow(fieldnames)
+
+                        for data in self.best_doodles:
+                            writer.writerow(data)
+                    return
                 else:
                     self.generation += 1
-                    GA.next_generation(TOTAL, savedDoodler)
-                    doodler = GA.doodlers
+                    GA.nextGeneration(TOTAL, savedDoodler)
+                    doodler = GA.doodles
                     starttime = time.time()
+                self.score = 0
                 savedDoodler.clear()
                
             self.update()
 
             for d in doodler:
-                # doodler_life = round(currentTime-starttime,1) # subtract time it took to get to that score to fitness
                 d.fitness = self.score
                 d.move(d.think(self.platforms))
                 self.drawPlayer(d)
@@ -224,9 +235,14 @@ class DoodleJump():
             pygame.display.update()
 
 
-            
+mode = 0
+while (mode != 1 and mode != 2):
+    mode = int(input("Select mode: \n(1) Highscore \n(2) Time Trial\n"))
+mode -= 1
+text = "Time Trial Mode. The algorithm will get the highest score within 30 seconds." if mode else "Highscore Mode. The algorithm will try to maximize score without a time limit."
+print("You have selected " + text)
+print("Press x on the window to exit early, algorithm results will be outputed into a csv upon completion...Enjoy!")
 
-
-DoodleJump().run()
+DoodleJump(mode=input).run()
 
         
