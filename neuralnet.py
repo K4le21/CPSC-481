@@ -1,57 +1,76 @@
-import numpy as np
+import Player
+import pygame
+import math
 import random
+import neuralnet as nn
 
 
-class NeuralNetwork():
 
-    def __init__(self, in_nodes, hid_nodes, out_nodes):
+class GeneticAlgorithm():
+    def __init__(self):
+        self.best = Player.Player(nn.NeuralNetwork(5,3))
+        self.doodles = []
+        self.bestFitness = 0
+
+    def populate(self, total, bestBrain):
+        if (bestBrain is None):
+            for i in range(total):
+                self.doodles.append(Player.Player(nn.NeuralNetwork(5,3)))
+        else:
+            for i in range(total):
+                self.doodles.append(Player.Player(bestBrain))
+        return self.doodles
+
+    def nextGeneration(self, total, array):
+        self.bestOne(array)
+
+        best = self.best.clone() 
+        self.populate(1, best.brain)
+
+        champion2 = self.best.clone()                   # Create another clone so it gets mutated in selectOne function
+        champion2.fitness = self.bestFitness
+        array.append(champion2)
+        array.reverse()
+        # create random players based on fitness
+        for p in range(total - 1):
+            parent = self.selectOne(array)
+            self.populate(1, parent)
         
-        self.input_nodes = in_nodes
-        self.hidden_nodes = hid_nodes
-        self.output_nodes = out_nodes
-        self.weights1 = 2* np.random.random((self.input_nodes, self.hidden_nodes)) -1
-        self.weights2 = 2* np.random.random((self.hidden_nodes,self.output_nodes)) -1
-        self.bias1 = 2* np.random.random((self.hidden_nodes)) -1
-        self.bias2 = 2* np.random.random((self.output_nodes)) -1
+        array.clear()
+        #print("mutated?", self.best.brain.bias1)
 
-    # Activation functions
-    def sigmoid(self, x):
-        #applying the sigmoid function
-        return 1 / (1 + np.exp(-x))
-    
-    def tanh(self,x):
-        return (2 / (1 + np.exp(-2*x))) - 1
-    
-    def feedForward(self, inputs):
-        inputs = np.asarray(inputs)  # convert inputs into np array
-        hidden = self.sigmoid(np.dot(inputs, self.weights1)+ self.bias1)
-        output = self.sigmoid(np.dot(hidden, self.weights2)+ self.bias2)
-        return output
-        
-    def mutate(self, rate):   
-        def mutation (val):
-            if (np.random.random(1) < rate):
-                rand = random.gauss(0, 0.1) + val
-                if (rand > 1):
-                    rand = 1
-                elif (rand < -1):
-                    rand =-1
+    def calculateFitnessSum(self, array):
+        # sum fitness
+        fitnessSum = math.floor(sum(p.fitness for p in array))
 
-                return rand
-            else:
-                return val
-        vmutate = np.vectorize(mutation)
-        self.weights1 = vmutate(self.weights1)
-        self.weights2 = vmutate(self.weights2)
-        self.bias1 = vmutate(self.bias1)
-        self.bias2 = vmutate(self.bias2)
-    
-    def clone(self):
-        cloneBrain = NeuralNetwork(self.input_nodes, self.hidden_nodes, self.output_nodes)
-        cloneBrain.weights1 = self.weights1
-        cloneBrain.weights2 = self.weights2
-        cloneBrain.bias1 = self.bias1
-        cloneBrain.bias2 = self.bias2
+        return fitnessSum
+
+    # Selecting a player with equal probability based on their fitness score 
+    def selectOne(self, array):
+        fitnessSum = self.calculateFitnessSum(array)
+        rand = random.uniform(1,fitnessSum)
+        runningSum = 0
+
+        for b in array:
+            runningSum += b.fitness
+            if(runningSum > rand):
+                b.brain.mutate(0.1)
+                return b.brain
+
+    # Select the best one of the generation and put into next generation
+    def bestOne(self, array):
+        max = 0
+        currentBest = Player.Player(nn.NeuralNetwork(5,3))
+
+        for b in array:
+            if (b.fitness >= max):
+                max = b.fitness                     # saves current max fitness
+                currentBest = b                     # saves current best player 
         
-        return cloneBrain
-    
+        # if current best from the generation is better than all-time best
+        if (currentBest.fitness >= self.bestFitness):
+            # print("BEST")
+            self.best = currentBest.clone()                  # clone the current best player 
+            self.best.fitness = currentBest.fitness
+            self.bestFitness = currentBest.fitness
+        
