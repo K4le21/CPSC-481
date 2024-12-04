@@ -1,6 +1,6 @@
-import math
 import pygame
 import neuralnet as nn
+import numpy as np
 
 
 
@@ -89,9 +89,9 @@ class Player():
         inputs = []
         vision = self.look(platforms)
         
+        inputs.append(vision[0])
         inputs.append(vision[1])
         inputs.append(vision[2])
-        inputs.append(vision[3])
 
         #inputs.append(self.x/600)                   # Player X value
         inputs.append(coordinatesUp - self.x/600-self.x)         # X value of platform above
@@ -122,29 +122,26 @@ class Player():
         self.fitness = self.fitness**2
 
 
-    # Player looks from 8 directions to find platforms
+    # Player looks from 3 directions to find platforms
     def look(self, platforms):
         vision = [0, 0, 0, 0]
 
         for p in platforms:
             rect = pygame.Rect(p.x , p.y, p.green.get_width(), p.green.get_height())
             
-            up = pygame.Rect(self.x+ 50, self.y, 1, 800)
-            down = pygame.Rect(self.x + 50, self.y-800, 1, 800)
+            down = pygame.Rect(self.x + 50, self.y-1000, 1, 1000)
             left = pygame.Rect(self.x-600, self.y +50, 600, 1)
             right = pygame.Rect(self.x, self.y +50, 600, 1)
 
-            if (rect.colliderect(up) and p.kind != 2):
+            if (rect.colliderect(down) and p.kind != 2):
                 vision[0] = 1
 
-            if (rect.colliderect(down) and p.kind != 2):
+            elif (rect.colliderect(left) and p.kind != 2):
                 vision[1] = 1
-
-            if (rect.colliderect(left) and p.kind != 2):
+            
+            elif (rect.colliderect(right) and p.kind != 2):
                 vision[2] = 1
-
-            if (rect.colliderect(right) and p.kind != 2):
-                vision[3] = 1
+                    
 
         return vision
 
@@ -152,3 +149,4 @@ class Player():
         cloneBrain = self.brain.clone()
         clone = Player(cloneBrain)
         return clone
+        
