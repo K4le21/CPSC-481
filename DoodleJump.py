@@ -188,8 +188,8 @@ class DoodleJump():
                     
                 else:
                     self.generation += 1
-                    GA.nextGeneration(TOTAL, savedDoodler)
-                    doodler = GA.doodler
+                    GA.next_generation(TOTAL, savedDoodler)
+                    doodler = GA.doodlers
                     starttime = time.time()
                 savedDoodler.clear()
                

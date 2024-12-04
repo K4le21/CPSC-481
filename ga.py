@@ -5,82 +5,71 @@ import random
 import neuralnet as nn
 
 
-
-class GeneticAlgorithm():
+class GeneticAlgorithm:
     def __init__(self):
-        self.best = Player.Player(nn.NeuralNetwork(5,4,3))
-        self.doodler = []
-        self.bestFitness = 0
+        self.best = Player.Player(nn.NeuralNetwork(5, 4, 3))  # All-time best player
+        self.doodlers = []  # Current population
+        self.best_fitness = 0
 
-    def populate(self, total, bestBrain):
-        
-        if (bestBrain is None):
-            for i in range(total):
-                self.doodler.append(Player.Player(nn.NeuralNetwork(5,4,3)))
-        else:
-            for i in range(total):
-                self.doodler.append(Player.Player(bestBrain))
-                
-        return self.doodler
+    def populate(self, total, best_brain=None):
+        """
+        Populate the next generation. If `best_brain` is provided, players
+        will clone and mutate it; otherwise, new random players are generated.
+        """
+        self.doodlers = [
+            Player.Player(best_brain.clone() if best_brain else nn.NeuralNetwork(5, 4, 3))
+            for _ in range(total)
+        ]
+        return self.doodlers
 
-    def nextGeneration(self, total, array):
-        self.bestOne(array)
+    def next_generation(self, total, players):
+        """
+        Create the next generation from the current population.
+        """
+        # Find the best player of the current generation
+        self.best_one(players)
 
-        champion = self.best.clone() 
-        self.populate(1, champion.brain)
+        # Add a clone of the best player (unmutated)
+        champion = self.best.clone()
+        champion.fitness = self.best_fitness
+        self.doodlers.append(Player.Player(champion.brain))
 
-        champion2 = self.best.clone()                   # Create another clone so it gets mutated in selectOne function
-        champion2.fitness = self.bestFitness
-        array.append(champion2)
-        array.reverse()
-        # create random players based on fitness
-        for p in range(total -1):
-            parent = self.selectOne(array)
-            self.populate(1, parent)
-        
-        array.clear()
-        #print("mutated?", self.best.brain.bias1)
+        # Fill the remaining slots with mutated offspring
+        fitness_sum = self.calculate_fitness_sum(players)
+        for _ in range(total - 1):
+            parent = self.select_one(players, fitness_sum)
+            child_brain = parent.clone()
+            child_brain.mutate(0.1)
+            self.doodlers.append(Player.Player(child_brain))
 
-    def calculateFitnessSum(self, array):
-        # sum fitness
-        fitnessSum = math.floor(sum(p.fitness for p in array))
+        # Clear the old population
+        players.clear()
 
-        return fitnessSum
+    def calculate_fitness_sum(self, players):
+        """
+        Calculate the total fitness of the current population.
+        """
+        return sum(player.fitness for player in players)
 
-    # Selecting a player with equal probability based on their fitness score 
-    def selectOne(self, array):
-        fitnessSum = self.calculateFitnessSum(array)
-        rand = random.uniform(1,fitnessSum)
-        runningSum = 0
+    def select_one(self, players, fitness_sum):
+        """
+        Select a player based on fitness-proportional probability (roulette selection).
+        """
+        rand = random.uniform(0, fitness_sum)
+        running_sum = 0
 
-        for b in array:
-            runningSum += b.fitness
-            if(runningSum > rand):
-                b.brain.mutate(0.1)
-                return b.brain
+        for player in players:
+            running_sum += player.fitness
+            if running_sum > rand:
+                return player.brain
 
-    # Select the best one of the generation and put into next generation
-    def bestOne(self, array):
-        max = 0
-        currentBest = Player.Player(nn.NeuralNetwork(5,4,3))
+    def best_one(self, players):
+        """
+        Find the best player in the current population.
+        """
+        current_best = max(players, key=lambda p: p.fitness)
 
-        for b in array:
-            if (b.fitness >= max):
-                max = b.fitness                     # saves current max fitness
-                currentBest = b                     # saves current best player 
-        
-        # if current best from the generation is better than all-time best
-        if (currentBest.fitness >= self.bestFitness):
-            #print("BEST")
-            self.best = currentBest.clone()                  # clone the current best player 
-            self.best.fitness = currentBest.fitness
-            self.bestFitness = currentBest.fitness
-        
-        
-
-        #print("current", currentBest.brain.bias1)
-        #print("not mutated", self.best.brain.bias1)
- 
-
-
-
+        if current_best.fitness > self.best_fitness:
+            self.best = current_best.clone()
+            self.best.fitness = current_best.fitness
+            self.best_fitness = current_best.fitness
