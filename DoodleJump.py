@@ -185,7 +185,7 @@ class DoodleJump():
                 self.best_doodles.append([self.generation, currentTime-starttime ,self.score])
 
                 # Stop after 50 generations
-                if (self.generation > 10 ):
+                if (self.generation > 49 ):
                     print("Complete")
                     # write results to csv
                     file_path = 'v2_results.csv'
