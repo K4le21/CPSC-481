@@ -10,7 +10,7 @@ import csv
 
 W = 600
 H = 800
-TOTAL = 20
+TOTAL = 250
 
 
 class DoodleJump():
@@ -146,7 +146,6 @@ class DoodleJump():
     def run(self):
         background_image = pygame.image.load('assets/background.png')
         clock = pygame.time.Clock()
-        TOTAL = 250
         savedDoodler = []
         GA = ga.GeneticAlgorithm()
         doodler = GA.populate(TOTAL, None)
@@ -188,7 +187,7 @@ class DoodleJump():
                 if (self.generation > 49 ):
                     print("Complete")
                     # write results to csv
-                    file_path = 'v2_results.csv'
+                    file_path = 'v3_results.csv'
                     with open(file_path, mode="w", newline="") as file:
                         fieldnames=["Generation", "Time Alive", "Score"]
                         writer = csv.writer(file)
