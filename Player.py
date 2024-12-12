@@ -1,6 +1,6 @@
+import math
 import pygame
 import neuralnet as nn
-import numpy as np
 
 
 
@@ -84,33 +84,33 @@ class Player():
     
     # Ai Part
     def think(self, platforms):
+        '''From input array before sending data to neural network'''
         coordinatesUp = self.getPlatformAbove(platforms)
         coordinatesDown = self.getPlatformBelow(platforms)
         inputs = []
         vision = self.look(platforms)
-        
+        # left, right, down vision
         inputs.append(vision[0])
         inputs.append(vision[1])
         inputs.append(vision[2])
-
-        #inputs.append(self.x/600)                   # Player X value
-        inputs.append(coordinatesUp - self.x/600-self.x)         # X value of platform above
-        inputs.append(coordinatesDown - self.x/600 -self.x)         # X value of platform below
+        # platform distances
+        inputs.append(coordinatesUp - self.x/600-self.x)
+        inputs.append(coordinatesDown - self.x/600 -self.x)
         
         output = self.brain.feedForward(inputs).tolist()     
-
+        # choose the option with the highest probability
         index = output.index(max(output))
         return index
 
-    # Retrieve X value of platform above player
     def getPlatformAbove(self,platforms):
+        '''Retrieve X value of platform above player'''
         for p in platforms:
             if (self.startY < p.startY):
                 if (p.kind != 2):
                     return p.x
             
-    # Retrieve X value of platform below player
     def getPlatformBelow(self,platforms):
+        '''Retrieve X value of platform below player'''
         maxX = 0
         for p in platforms:
             if (self.startY > p.startY):
@@ -121,27 +121,25 @@ class Player():
     def fitnessExpo(self):
         self.fitness = self.fitness**2
 
-
-    # Player looks from 3 directions to find platforms
     def look(self, platforms):
-        vision = [0, 0, 0, 0]
+        '''Look for platforms in 3 directions'''
+        vision = [0, 0, 0]
+        down = pygame.Rect(self.x + 50, self.y-800, 1, 800)
+        left = pygame.Rect(self.x-600, self.y +50, 600, 1)
+        right = pygame.Rect(self.x, self.y +50, 600, 1)
 
         for p in platforms:
+            # Create a hitbox for the platform
             rect = pygame.Rect(p.x , p.y, p.green.get_width(), p.green.get_height())
             
-            down = pygame.Rect(self.x + 50, self.y-1000, 1, 1000)
-            left = pygame.Rect(self.x-600, self.y +50, 600, 1)
-            right = pygame.Rect(self.x, self.y +50, 600, 1)
-
             if (rect.colliderect(down) and p.kind != 2):
                 vision[0] = 1
 
             elif (rect.colliderect(left) and p.kind != 2):
                 vision[1] = 1
-            
+
             elif (rect.colliderect(right) and p.kind != 2):
                 vision[2] = 1
-                    
 
         return vision
 
@@ -149,4 +147,3 @@ class Player():
         cloneBrain = self.brain.clone()
         clone = Player(cloneBrain)
         return clone
-        
