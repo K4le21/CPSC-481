@@ -1,17 +1,11 @@
 import pygame
-import random
 import Platform
-import neuralnet as nn
-import Player
 import ga
 import time
 import csv
 
-
 W = 600
 H = 800
-TOTAL = 250
-
 
 class DoodleJump():
     def __init__(self, mode):
@@ -28,30 +22,26 @@ class DoodleJump():
         self.best_doodles = []
         self.time_trial = mode
 
-
-        
     def playerUpdate(self,player):
-        # Camera follow player when jumping
+        '''Camera follow player when jumping'''
         if (player.y - self.camera <=250):
             self.camera -= 10
 
     def drawPlayer(self, player):
+        '''draw the player on the screen at coordinates'''
         if (player.direction == 0):
             if (player.jump > 0):
                 self.screen.blit(player.playerRight_1, (player.x, player.y - self.camera))
             else:
                 self.screen.blit(player.playerRight, (player.x, player.y - self.camera))
-        
         else:
             if (player.jump):
                 self.screen.blit(player.playerLeft_1, (player.x, player.y - self.camera))
             else:
                 self.screen.blit(player.playerLeft, (player.x, player.y - self.camera))
 
-
-
-    # Platform colliders
     def updateplatforms(self,player):
+        '''check for collision between the player hitbox and platforms on screen'''
         for p in self.platforms:
             rect = pygame.Rect(p.x + 10, p.y, p.green.get_width() - 25, p.green.get_height() - 20)
             playerCollider = pygame.Rect(player.x, player.y, player.playerRight.get_width() - 10, player.playerRight.get_height())
@@ -60,7 +50,7 @@ class DoodleJump():
                 if (spring.colliderect(playerCollider) and player.gravity > 0 and player.y < (p.y - self.camera)):
                     player.jump = 35
                     player.gravity = 0 
-            if (rect.colliderect(playerCollider) and player.gravity > 0 and player.y < (p.y - self.camera)):
+            elif (rect.colliderect(playerCollider) and player.gravity > 0 and player.y < (p.y - self.camera)):
                 # jump when landing on green or blue
                 if (p.kind != 2):
                     player.jump = 20
@@ -70,6 +60,7 @@ class DoodleJump():
 
     # Draw generated platforms
     def drawplatforms(self):
+        '''Draw platforms'''
         for p in self.platforms:
             y = p.y - self.camera
             if (y > H):
@@ -100,12 +91,12 @@ class DoodleJump():
                     self.screen.blit(p.red_1, (p.x, p.y - self.camera))
    
     def generateplatforms(self,initial):
-        y = 900                     # Generate from bottom of the screen
+        '''generate platforms'''
+        y = 900
         start = -100
         if (initial == True):
             self.startY = -100
             # Fill starting screen with platforms
-
             while (y > -70):
                 p = Platform.Platform()
                 p.getKind(self.score)
@@ -113,11 +104,9 @@ class DoodleJump():
                 p.y = y
                 p.startY = start
                 self.platforms.append(p)
-                y -= 30                                 # Generate every 30 pixels 
+                y -= 30
                 start += 30
                 self.startY =start
-    
-                
         else:
             # Creates a platform based on current score 
             p = Platform.Platform()
@@ -137,15 +126,17 @@ class DoodleJump():
             self.platforms.append(p)
 
     def update(self):
+        '''Draw generated platforms and overall stats'''
         self.drawplatforms()
         self.screen.blit(self.font.render("Score: " +str(self.score), -1, (0, 0, 0)), (25, 25))
         self.screen.blit(self.font.render("Generation: " +str(self.generation), -1, (0, 0, 0)), (25, 60))
 
         
-    # Run game
     def run(self):
+        '''Run game'''
         background_image = pygame.image.load('assets/background.png')
         clock = pygame.time.Clock()
+        TOTAL = 250 # total number of doodles per generation
         savedDoodler = []
         GA = ga.GeneticAlgorithm()
         doodler = GA.populate(TOTAL, None)
@@ -173,7 +164,7 @@ class DoodleJump():
                 doodler.clear()
 
             # When all doodlers are dead, create new generation
-            if(len(doodler) == 0 or (currentTime-starttime > 30 and mode != 0)):
+            if(len(doodler) == 0 or (currentTime-starttime > 30 and self.time_trial != 0)):
                 self.camera = 0
                 self.time = time.time()
                 
@@ -183,11 +174,11 @@ class DoodleJump():
                  # Stagnation (No improvement)
                 self.best_doodles.append([self.generation, currentTime-starttime ,self.score])
 
-                # Stop after 50 generations
+                # Stop after 100 generations
                 if (self.generation > 49 ):
                     print("Complete")
                     # write results to csv
-                    file_path = 'v3_results.csv'
+                    file_path = 'v3_results_timetrial.csv'
                     with open(file_path, mode="w", newline="") as file:
                         fieldnames=["Generation", "Time Alive", "Score"]
                         writer = csv.writer(file)
@@ -199,7 +190,7 @@ class DoodleJump():
                 else:
                     self.generation += 1
                     GA.nextGeneration(TOTAL, savedDoodler)
-                    doodler = GA.doodles
+                    doodler = GA.doodler
                     starttime = time.time()
                 self.score = 0
                 savedDoodler.clear()
@@ -207,12 +198,13 @@ class DoodleJump():
             self.update()
 
             for d in doodler:
+                # update each doodlers base fitness and move them on the screen
                 d.fitness = self.score
                 d.move(d.think(self.platforms))
                 self.drawPlayer(d)
                 self.playerUpdate(d)
                 self.updateplatforms(d)
-
+                # if the doodle does well(moves up 800 px), add it to the saved doodle list
                 if(d.y - self.camera > 800):
                     d.fitnessExpo()
                     savedDoodler.append(d)
@@ -221,9 +213,7 @@ class DoodleJump():
             if(self.score > highestScore):
                 highestScore = self.score
             
-            
-                   
-            # print(str(currentTime-starttime))
+            # Display current generation stats
             self.screen.blit(self.font.render("Count: " +str(len(doodler)), -1, (0, 0, 0)), (25, 120))
             self.screen.blit(self.font.render("High Score: " +str(highestScore), -1, (0, 0, 0)), (25, 90))
             self.screen.blit(self.font.render("Time: " +str(round(currentTime-starttime,1)), -1, (0, 0, 0)), (25, 150))
@@ -242,6 +232,4 @@ text = "Time Trial Mode. The algorithm will get the highest score within 30 seco
 print("You have selected " + text)
 print("Press x on the window to exit early, algorithm results will be outputed into a csv upon completion...Enjoy!")
 
-DoodleJump(mode=input).run()
-
-        
+DoodleJump(mode=mode).run()
