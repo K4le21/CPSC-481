@@ -1,76 +1,62 @@
 import Player
-import pygame
 import math
 import random
 import neuralnet as nn
 
-
-
 class GeneticAlgorithm():
     def __init__(self):
-        self.best = Player.Player(nn.NeuralNetwork(5,3))
-        self.doodles = []
+        self.best = Player.Player(nn.NeuralNetwork(5,5,4,3))
+        self.doodler = []
         self.bestFitness = 0
 
     def populate(self, total, bestBrain):
+        '''Create a batch of doodles based on the best doodle'''
         if (bestBrain is None):
             for i in range(total):
-                self.doodles.append(Player.Player(nn.NeuralNetwork(5,3)))
+                self.doodler.append(Player.Player(nn.NeuralNetwork(5,5,4,3)))
         else:
             for i in range(total):
-                self.doodles.append(Player.Player(bestBrain))
-        return self.doodles
+                self.doodler.append(Player.Player(bestBrain))
+        return self.doodler
 
     def nextGeneration(self, total, array):
+        '''Create the next generation of doodles'''
+        # Find the doodle with highest fitness before cloning it
         self.bestOne(array)
+        self.populate(1, self.best.brain)
 
-        best = self.best.clone() 
-        self.populate(1, best.brain)
+        # Clone the best one to be mutated
+        clonedBest = self.best.clone()
+        clonedBest.fitness = self.bestFitness
+        array.append(clonedBest)
 
-        champion2 = self.best.clone()                   # Create another clone so it gets mutated in selectOne function
-        champion2.fitness = self.bestFitness
-        array.append(champion2)
-        array.reverse()
-        # create random players based on fitness
+        # create 250 doodles with slightly mutated weights/biases OR previous best
         for p in range(total - 1):
             parent = self.selectOne(array)
             self.populate(1, parent)
-        
         array.clear()
-        #print("mutated?", self.best.brain.bias1)
 
-    def calculateFitnessSum(self, array):
-        # sum fitness
-        fitnessSum = math.floor(sum(p.fitness for p in array))
-
-        return fitnessSum
-
-    # Selecting a player with equal probability based on their fitness score 
     def selectOne(self, array):
-        fitnessSum = self.calculateFitnessSum(array)
-        rand = random.uniform(1,fitnessSum)
-        runningSum = 0
+        '''Select a random doodle out of the array and mutate it'''
+        rand = random.randint(1,len(array)-1)
+        array[rand].brain.mutate(0.1)
+        return array[rand].brain
 
-        for b in array:
-            runningSum += b.fitness
-            if(runningSum > rand):
-                b.brain.mutate(0.1)
-                return b.brain
-
-    # Select the best one of the generation and put into next generation
     def bestOne(self, array):
+        '''Select the best one of the generation and save it'''
         max = 0
-        currentBest = Player.Player(nn.NeuralNetwork(5,3))
+        # create a base doodle with fitness 0 to initialize
+        currentBest = Player.Player(nn.NeuralNetwork(5,5,4,3))
 
+        # update the best doodle if they exist, based on fitness
         for b in array:
             if (b.fitness >= max):
-                max = b.fitness                     # saves current max fitness
-                currentBest = b                     # saves current best player 
+                max = b.fitness
+                currentBest = b
         
         # if current best from the generation is better than all-time best
         if (currentBest.fitness >= self.bestFitness):
-            # print("BEST")
-            self.best = currentBest.clone()                  # clone the current best player 
+            # clone the current best player and update best fitness
+            self.best = currentBest.clone()
             self.best.fitness = currentBest.fitness
             self.bestFitness = currentBest.fitness
-        
